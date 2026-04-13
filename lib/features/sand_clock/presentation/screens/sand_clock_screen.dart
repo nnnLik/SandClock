@@ -3,7 +3,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/utils/time_format.dart';
@@ -11,7 +10,14 @@ import '../widgets/hourglass_painter.dart';
 import '../widgets/sand_color_picker_dialog.dart';
 
 class SandClockScreen extends StatefulWidget {
-  const SandClockScreen({super.key});
+  const SandClockScreen({
+    super.key,
+    required this.schemeColor,
+    required this.onSchemeColorChanged,
+  });
+
+  final Color schemeColor;
+  final ValueChanged<Color> onSchemeColorChanged;
 
   @override
   State<SandClockScreen> createState() => _SandClockScreenState();
@@ -29,17 +35,26 @@ class _SandClockScreenState extends State<SandClockScreen>
 
   int _lastValidSeconds = AppConstants.defaultSeconds;
 
-  Color _sandColor = AppColors.sandDefault;
+  late Color _sandColor;
 
   @override
   void initState() {
     super.initState();
+    _sandColor = widget.schemeColor;
     _controller = AnimationController(
       vsync: this,
       duration: Duration(seconds: AppConstants.animationControllerPlaceholderSeconds),
     )
       ..addListener(() => setState(() {}))
       ..addStatusListener(_onAnimationStatus);
+  }
+
+  @override
+  void didUpdateWidget(covariant SandClockScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.schemeColor != widget.schemeColor && !_inputLocked) {
+      _sandColor = widget.schemeColor;
+    }
   }
 
   void _onAnimationStatus(AnimationStatus status) {
@@ -133,6 +148,7 @@ class _SandClockScreenState extends State<SandClockScreen>
     );
     if (picked != null && mounted) {
       setState(() => _sandColor = picked);
+      widget.onSchemeColorChanged(picked);
     }
   }
 
@@ -182,6 +198,7 @@ class _SandClockScreenState extends State<SandClockScreen>
                               painter: HourglassPainter(
                                 progress: progress,
                                 sandColor: _sandColor,
+                                frameColor: Theme.of(context).colorScheme.outline,
                               ),
                             ),
                           );
@@ -206,7 +223,6 @@ class _SandClockScreenState extends State<SandClockScreen>
                       decoration: const InputDecoration(
                         labelText: AppStrings.fieldSecondsLabel,
                         border: OutlineInputBorder(),
-                        helperText: AppStrings.fieldSecondsHelper,
                       ),
                       onChanged: (_) => setState(() {}),
                     ),
@@ -241,14 +257,6 @@ class _SandClockScreenState extends State<SandClockScreen>
                 AppStrings.remainingMmSs(formatMmSs(_remainingSeconds)),
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              const Spacer(),
-              Text(
-                AppStrings.variantFooter,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.outline,
-                    ),
               ),
             ],
           ),

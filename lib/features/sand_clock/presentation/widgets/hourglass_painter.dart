@@ -9,40 +9,49 @@ class HourglassPainter extends CustomPainter {
     required this.progress,
     required this.sandColor,
     this.frameColor = AppColors.hourglassFrame,
-    this.backgroundColor = AppColors.hourglassCanvasBackground,
   });
 
   final double progress;
   final Color sandColor;
   final Color frameColor;
-  final Color backgroundColor;
 
   @override
   void paint(Canvas canvas, Size size) {
     final w = size.width;
     final h = size.height;
-    final p = w * 0.08;
+    final p = w * 0.1;
     final neckY = h / 2;
     final bottomY = h - p;
+    final cx = w / 2;
 
     final upperPath = Path()
       ..moveTo(p, p)
-      ..lineTo(w - p, p)
-      ..lineTo(w / 2, neckY)
+      ..quadraticBezierTo(cx, p + p * 0.18, w - p, p)
+      ..lineTo(cx, neckY)
       ..close();
 
     final lowerPath = Path()
-      ..moveTo(w / 2, neckY)
+      ..moveTo(cx, neckY)
       ..lineTo(p, bottomY)
-      ..lineTo(w - p, bottomY)
+      ..quadraticBezierTo(cx, bottomY - p * 0.2, w - p, bottomY)
       ..close();
-
-    final bgPaint = Paint()..color = backgroundColor;
-    canvas.drawRect(Offset.zero & size, bgPaint);
 
     final hUpper = neckY - p;
     final hLower = bottomY - neckY;
     final t = progress.clamp(0.0, 1.0);
+
+    final glassFill = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Colors.white.withValues(alpha: 0.08),
+          Colors.white.withValues(alpha: 0.02),
+          Colors.black.withValues(alpha: 0.08),
+        ],
+      ).createShader(Offset.zero & size);
+    canvas.drawPath(upperPath, glassFill);
+    canvas.drawPath(lowerPath, glassFill);
 
     final ySandTop = p + hUpper * t;
     final upperSandPath = _upperSandPath(w, p, neckY, ySandTop);
@@ -50,7 +59,14 @@ class HourglassPainter extends CustomPainter {
       canvas.drawPath(
         upperSandPath,
         Paint()
-          ..color = sandColor
+          ..shader = LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              sandColor.withValues(alpha: 0.92),
+              sandColor.withValues(alpha: 0.8),
+            ],
+          ).createShader(upperPath.getBounds())
           ..style = PaintingStyle.fill,
       );
     }
@@ -61,8 +77,44 @@ class HourglassPainter extends CustomPainter {
       canvas.drawPath(
         lowerSandPath,
         Paint()
-          ..color = sandColor
+          ..shader = LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              sandColor.withValues(alpha: 0.88),
+              sandColor,
+            ],
+          ).createShader(lowerPath.getBounds())
           ..style = PaintingStyle.fill,
+      );
+    }
+
+    if (t > 0.0 && t < 1.0) {
+      final streamTop = neckY - p * 0.12;
+      final streamBottom = yBoundary.clamp(neckY + p * 0.18, bottomY - p * 0.12);
+      final streamWidth = math.max(1.4, w * 0.011) * (1.0 - 0.3 * t);
+      final streamPaint = Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            sandColor.withValues(alpha: 0.95),
+            sandColor.withValues(alpha: 0.35),
+          ],
+        ).createShader(
+          Rect.fromCenter(
+            center: Offset(cx, (streamTop + streamBottom) / 2),
+            width: streamWidth * 2,
+            height: streamBottom - streamTop,
+          ),
+        )
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round
+        ..strokeWidth = streamWidth;
+      canvas.drawLine(
+        Offset(cx, streamTop),
+        Offset(cx, streamBottom),
+        streamPaint,
       );
     }
 
@@ -74,6 +126,11 @@ class HourglassPainter extends CustomPainter {
 
     canvas.drawPath(upperPath, stroke);
     canvas.drawPath(lowerPath, stroke);
+    canvas.drawCircle(
+      Offset(cx, neckY),
+      math.max(1.8, w * 0.008),
+      Paint()..color = frameColor.withValues(alpha: 0.8),
+    );
   }
 
   static double _xLeftUpper(double w, double p, double neckY, double y) {
@@ -151,8 +208,7 @@ class HourglassPainter extends CustomPainter {
   bool shouldRepaint(covariant HourglassPainter oldDelegate) {
     return oldDelegate.progress != progress ||
         oldDelegate.sandColor != sandColor ||
-        oldDelegate.frameColor != frameColor ||
-        oldDelegate.backgroundColor != backgroundColor;
+        oldDelegate.frameColor != frameColor;
   }
 
   @override

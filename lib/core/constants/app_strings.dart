@@ -2,7 +2,6 @@ abstract final class AppStrings {
   AppStrings._();
 
   static const String appTitle = 'Песочные часы';
-  static const String variantFooter = 'Песочные часы — вариант 8';
 
   static const String dialogTimeUpTitle = 'Время вышло';
   static const String dialogTimeUpBody = 'Время истекло.';
@@ -13,7 +12,6 @@ abstract final class AppStrings {
   static const String tooltipSandColor = 'Цвет песка';
 
   static const String fieldSecondsLabel = 'Секунды';
-  static const String fieldSecondsHelper = 'Целое число > 0';
 
   static const String start = 'Старт';
   static const String reset = 'Сброс';

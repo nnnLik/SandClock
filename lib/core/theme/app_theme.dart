@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 
-import '../constants/app_colors.dart';
-
 abstract final class AppTheme {
   AppTheme._();
 
-  static ThemeData light() {
+  static ThemeData light(Color seedColor) {
     return ThemeData(
       colorScheme: ColorScheme.fromSeed(
-        seedColor: AppColors.seed,
+        seedColor: seedColor,
         brightness: Brightness.light,
       ),
       visualDensity: VisualDensity.adaptivePlatformDensity,
@@ -16,10 +14,10 @@ abstract final class AppTheme {
     );
   }
 
-  static ThemeData dark() {
+  static ThemeData dark(Color seedColor) {
     return ThemeData(
       colorScheme: ColorScheme.fromSeed(
-        seedColor: AppColors.seed,
+        seedColor: seedColor,
         brightness: Brightness.dark,
       ),
       visualDensity: VisualDensity.adaptivePlatformDensity,

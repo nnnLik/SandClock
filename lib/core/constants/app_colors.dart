@@ -9,11 +9,13 @@ abstract final class AppColors {
 
   static const List<Color> sandPresets = <Color>[
     Color(0xFFD4A017),
-    Color(0xFFC9A227),
-    Color(0xFFB8860B),
-    Color(0xFFE6C35C),
-    Color(0xFF8B7355),
-    Color(0xFF6B8E23),
+    Color(0xFF1565C0),
+    Color(0xFF2E7D32),
+    Color(0xFF6A1B9A),
+    Color(0xFFC62828),
+    Color(0xFF00897B),
+    Color(0xFFEF6C00),
+    Color(0xFF37474F),
   ];
 
   static const Color hourglassFrame = Color(0xFF4A4A4A);

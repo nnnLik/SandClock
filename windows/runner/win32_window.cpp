@@ -144,6 +144,12 @@ bool Win32Window::Create(const std::wstring& title,
     return false;
   }
 
+  LONG style = GetWindowLong(window, GWL_STYLE);
+  style &= ~(WS_THICKFRAME | WS_MAXIMIZEBOX);
+  SetWindowLong(window, GWL_STYLE, style);
+  SetWindowPos(window, nullptr, 0, 0, 0, 0,
+               SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+
   UpdateTheme(window);
 
   return OnCreate();
