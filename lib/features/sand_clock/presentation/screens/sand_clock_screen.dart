@@ -1,0 +1,259 @@
+import 'dart:math' as math;
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/app_constants.dart';
+import '../../../../core/constants/app_strings.dart';
+import '../../../../core/utils/time_format.dart';
+import '../widgets/hourglass_painter.dart';
+import '../widgets/sand_color_picker_dialog.dart';
+
+class SandClockScreen extends StatefulWidget {
+  const SandClockScreen({super.key});
+
+  @override
+  State<SandClockScreen> createState() => _SandClockScreenState();
+}
+
+class _SandClockScreenState extends State<SandClockScreen>
+    with TickerProviderStateMixin {
+  final TextEditingController _secondsController = TextEditingController(
+    text: '${AppConstants.defaultSeconds}',
+  );
+
+  late final AnimationController _controller;
+
+  int _runTotalSeconds = AppConstants.defaultSeconds;
+
+  int _lastValidSeconds = AppConstants.defaultSeconds;
+
+  Color _sandColor = AppColors.sandDefault;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: Duration(seconds: AppConstants.animationControllerPlaceholderSeconds),
+    )
+      ..addListener(() => setState(() {}))
+      ..addStatusListener(_onAnimationStatus);
+  }
+
+  void _onAnimationStatus(AnimationStatus status) {
+    if (status == AnimationStatus.completed && mounted) {
+      _showTimeUpDialog();
+    }
+  }
+
+  Future<void> _showTimeUpDialog() async {
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text(AppStrings.dialogTimeUpTitle),
+        content: const Text(AppStrings.dialogTimeUpBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text(AppStrings.dialogOk),
+          ),
+        ],
+      ),
+    );
+  }
+
+  int? _parsePositiveSeconds() {
+    final t = _secondsController.text.trim();
+    if (t.isEmpty) return null;
+    final v = int.tryParse(t);
+    if (v == null || v <= 0) return null;
+    return v;
+  }
+
+  bool get _canStart {
+    return _parsePositiveSeconds() != null &&
+        !_controller.isAnimating &&
+        (_controller.value == 0.0 || _controller.value == 1.0);
+  }
+
+  bool get _inputLocked =>
+      _controller.isAnimating ||
+      (_controller.value > 0.0 && _controller.value < 1.0);
+
+  bool get _isPaused =>
+      !_controller.isAnimating &&
+      _controller.value > 0.0 &&
+      _controller.value < 1.0;
+
+  int get _remainingSeconds {
+    if (_runTotalSeconds <= 0) return 0;
+    final r = ((_runTotalSeconds) * (1.0 - _controller.value)).ceil();
+    return math.max(0, r);
+  }
+
+  void _start() {
+    final n = _parsePositiveSeconds();
+    if (n == null) return;
+    _lastValidSeconds = n;
+    _runTotalSeconds = n;
+    _controller.duration = Duration(seconds: n);
+    _controller.reset();
+    _controller.forward();
+  }
+
+  void _reset() {
+    _controller.stop();
+    _controller.reset();
+    final n = _parsePositiveSeconds();
+    if (n != null) {
+      _lastValidSeconds = n;
+      _runTotalSeconds = n;
+    } else {
+      _runTotalSeconds = _lastValidSeconds;
+    }
+    setState(() {});
+  }
+
+  void _togglePause() {
+    if (_controller.isAnimating) {
+      _controller.stop();
+    } else if (_controller.value > 0 && _controller.value < 1) {
+      _controller.forward();
+    }
+    setState(() {});
+  }
+
+  Future<void> _pickSandColor() async {
+    final picked = await showSandColorPickerDialog(
+      context: context,
+      current: _sandColor,
+    );
+    if (picked != null && mounted) {
+      setState(() => _sandColor = picked);
+    }
+  }
+
+  @override
+  void dispose() {
+    _secondsController.dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final progress = _controller.value;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(AppStrings.appTitle),
+        actions: [
+          IconButton(
+            tooltip: AppStrings.tooltipSandColor,
+            onPressed: _inputLocked ? null : _pickSandColor,
+            icon: Icon(Icons.palette, color: _sandColor),
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(AppConstants.screenPadding),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: Center(
+                  child: RepaintBoundary(
+                    child: AspectRatio(
+                      aspectRatio: AppConstants.hourglassAspectRatio,
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final s = math.min(
+                            constraints.maxWidth,
+                            constraints.maxHeight,
+                          );
+                          return SizedBox(
+                            width: s,
+                            height: s,
+                            child: CustomPaint(
+                              painter: HourglassPainter(
+                                progress: progress,
+                                sandColor: _sandColor,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _secondsController,
+                      readOnly: _inputLocked,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                      ],
+                      decoration: const InputDecoration(
+                        labelText: AppStrings.fieldSecondsLabel,
+                        border: OutlineInputBorder(),
+                        helperText: AppStrings.fieldSecondsHelper,
+                      ),
+                      onChanged: (_) => setState(() {}),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                alignment: WrapAlignment.center,
+                children: [
+                  FilledButton(
+                    onPressed: _canStart ? _start : null,
+                    child: const Text(AppStrings.start),
+                  ),
+                  OutlinedButton(
+                    onPressed: _reset,
+                    child: const Text(AppStrings.reset),
+                  ),
+                  OutlinedButton(
+                    onPressed: (_controller.value > 0 &&
+                            _controller.value < 1)
+                        ? _togglePause
+                        : null,
+                    child: Text(_isPaused ? AppStrings.resume : AppStrings.pause),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                AppStrings.remainingMmSs(formatMmSs(_remainingSeconds)),
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              const Spacer(),
+              Text(
+                AppStrings.variantFooter,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
