@@ -7,6 +7,7 @@ environment:
   sdk: 3.11.4
 
 dependencies:
+  audioplayers: 6.6.0
   flutter:
     sdk: flutter
 
@@ -15,3 +16,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/sounds/timer_done.wav

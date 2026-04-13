@@ -1,34 +1,33 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_constants.dart';
 import '../../../../core/constants/app_strings.dart';
+import '../../../../core/constants/app_theme_presets.dart';
 
-Future<Color?> showSandColorPickerDialog({
+Future<AppThemePreset?> showThemePickerDialog({
   required BuildContext context,
-  required Color current,
+  required AppThemePreset current,
 }) {
-  return showDialog<Color>(
+  return showDialog<AppThemePreset>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: const Text(AppStrings.sandColorTitle),
-      content: Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: AppColors.sandPresets
-            .map(
-              (c) => GestureDetector(
-                onTap: () => Navigator.of(ctx).pop(c),
-                child: CircleAvatar(
-                  backgroundColor: c,
-                  radius: AppConstants.colorPickerAvatarRadius,
-                  child: current == c
-                      ? const Icon(Icons.check, color: Colors.white)
+      title: const Text(AppStrings.themeTitle),
+      content: SizedBox(
+        width: 320,
+        child: ListView(
+          shrinkWrap: true,
+          children: AppThemePresets.all
+              .map(
+                (theme) => ListTile(
+                  onTap: () => Navigator.of(ctx).pop(theme),
+                  leading: CircleAvatar(backgroundColor: theme.sandColor),
+                  title: Text(theme.name),
+                  trailing: current.name == theme.name
+                      ? const Icon(Icons.check)
                       : null,
                 ),
-              ),
-            )
-            .toList(),
+              )
+              .toList(),
+        ),
       ),
       actions: [
         TextButton(

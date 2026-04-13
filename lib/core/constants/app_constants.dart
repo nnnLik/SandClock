@@ -12,6 +12,4 @@ abstract final class AppConstants {
   static const double timeInputGap = 8;
 
   static const int animationControllerPlaceholderSeconds = 1;
-
-  static const double colorPickerAvatarRadius = 22;
 }

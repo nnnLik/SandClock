@@ -3,13 +3,11 @@ abstract final class AppStrings {
 
   static const String appTitle = 'Песочные часы';
 
-  static const String dialogTimeUpTitle = 'Время вышло';
-  static const String dialogTimeUpBody = 'Время истекло.';
-  static const String dialogOk = 'OK';
-
-  static const String sandColorTitle = 'Цвет песка';
+  static const String themeTitle = 'Тема оформления';
   static const String cancel = 'Отмена';
-  static const String tooltipSandColor = 'Цвет песка';
+  static const String tooltipTheme = 'Тема оформления';
+  static const String tooltipMute = 'Выключить звук';
+  static const String tooltipUnmute = 'Включить звук';
 
   static const String fieldHoursLabel = 'Часы';
   static const String fieldMinutesLabel = 'Минуты';

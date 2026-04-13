@@ -1,10 +1,12 @@
 import 'dart:math' as math;
 
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/constants/app_strings.dart';
+import '../../../../core/constants/app_theme_presets.dart';
 import '../../../../core/utils/time_format.dart';
 import '../widgets/hourglass_painter.dart';
 import '../widgets/sand_color_picker_dialog.dart';
@@ -12,12 +14,12 @@ import '../widgets/sand_color_picker_dialog.dart';
 class SandClockScreen extends StatefulWidget {
   const SandClockScreen({
     super.key,
-    required this.schemeColor,
-    required this.onSchemeColorChanged,
+    required this.selectedTheme,
+    required this.onThemeChanged,
   });
 
-  final Color schemeColor;
-  final ValueChanged<Color> onSchemeColorChanged;
+  final AppThemePreset selectedTheme;
+  final ValueChanged<AppThemePreset> onThemeChanged;
 
   @override
   State<SandClockScreen> createState() => _SandClockScreenState();
@@ -36,17 +38,24 @@ class _SandClockScreenState extends State<SandClockScreen>
   );
 
   late final AnimationController _controller;
+  late final AudioPlayer _audioPlayer;
 
   int _runTotalSeconds = AppConstants.defaultSeconds;
 
   int _lastValidSeconds = AppConstants.defaultSeconds;
 
+  late AppThemePreset _selectedTheme;
   late Color _sandColor;
+  bool _isMuted = false;
 
   @override
   void initState() {
     super.initState();
-    _sandColor = widget.schemeColor;
+    _selectedTheme = widget.selectedTheme;
+    _sandColor = _selectedTheme.sandColor;
+    _audioPlayer = AudioPlayer()
+      ..setPlayerMode(PlayerMode.lowLatency)
+      ..setReleaseMode(ReleaseMode.stop);
     _controller = AnimationController(
       vsync: this,
       duration: Duration(seconds: AppConstants.animationControllerPlaceholderSeconds),
@@ -58,32 +67,29 @@ class _SandClockScreenState extends State<SandClockScreen>
   @override
   void didUpdateWidget(covariant SandClockScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.schemeColor != widget.schemeColor && !_inputLocked) {
-      _sandColor = widget.schemeColor;
+    if (oldWidget.selectedTheme.name != widget.selectedTheme.name && !_inputLocked) {
+      _selectedTheme = widget.selectedTheme;
+      _sandColor = _selectedTheme.sandColor;
     }
   }
 
   void _onAnimationStatus(AnimationStatus status) {
     if (status == AnimationStatus.completed && mounted) {
-      _showTimeUpDialog();
+      _onTimeUp();
     }
   }
 
-  Future<void> _showTimeUpDialog() async {
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        title: const Text(AppStrings.dialogTimeUpTitle),
-        content: const Text(AppStrings.dialogTimeUpBody),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text(AppStrings.dialogOk),
-          ),
-        ],
-      ),
-    );
+  Future<void> _onTimeUp() async {
+    if (_isMuted) return;
+    try {
+      await _audioPlayer.stop();
+      await _audioPlayer.play(
+        AssetSource('sounds/timer_done.wav'),
+        volume: 1.0,
+      );
+    } catch (_) {
+      await SystemSound.play(SystemSoundType.click);
+    }
   }
 
   int? _parsePositiveSeconds() {
@@ -149,14 +155,17 @@ class _SandClockScreenState extends State<SandClockScreen>
     setState(() {});
   }
 
-  Future<void> _pickSandColor() async {
-    final picked = await showSandColorPickerDialog(
+  Future<void> _pickTheme() async {
+    final picked = await showThemePickerDialog(
       context: context,
-      current: _sandColor,
+      current: _selectedTheme,
     );
     if (picked != null && mounted) {
-      setState(() => _sandColor = picked);
-      widget.onSchemeColorChanged(picked);
+      setState(() {
+        _selectedTheme = picked;
+        _sandColor = picked.sandColor;
+      });
+      widget.onThemeChanged(picked);
     }
   }
 
@@ -166,6 +175,7 @@ class _SandClockScreenState extends State<SandClockScreen>
     _minutesController.dispose();
     _secondsController.dispose();
     _controller.dispose();
+    _audioPlayer.dispose();
     super.dispose();
   }
 
@@ -202,8 +212,13 @@ class _SandClockScreenState extends State<SandClockScreen>
         title: const Text(AppStrings.appTitle),
         actions: [
           IconButton(
-            tooltip: AppStrings.tooltipSandColor,
-            onPressed: _inputLocked ? null : _pickSandColor,
+            tooltip: _isMuted ? AppStrings.tooltipUnmute : AppStrings.tooltipMute,
+            onPressed: () => setState(() => _isMuted = !_isMuted),
+            icon: Icon(_isMuted ? Icons.volume_off : Icons.volume_up),
+          ),
+          IconButton(
+            tooltip: AppStrings.tooltipTheme,
+            onPressed: _inputLocked ? null : _pickTheme,
             icon: Icon(Icons.palette, color: _sandColor),
           ),
         ],

@@ -2,13 +2,11 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../../../../core/constants/app_colors.dart';
-
 class HourglassPainter extends CustomPainter {
   HourglassPainter({
     required this.progress,
     required this.sandColor,
-    this.frameColor = AppColors.hourglassFrame,
+    this.frameColor = const Color(0xFFF5F0E6),
   });
 
   final double progress;
