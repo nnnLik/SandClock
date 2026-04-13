@@ -11,6 +11,8 @@ abstract final class AppStrings {
   static const String cancel = 'Отмена';
   static const String tooltipSandColor = 'Цвет песка';
 
+  static const String fieldHoursLabel = 'Часы';
+  static const String fieldMinutesLabel = 'Минуты';
   static const String fieldSecondsLabel = 'Секунды';
 
   static const String start = 'Старт';

@@ -25,6 +25,12 @@ class SandClockScreen extends StatefulWidget {
 
 class _SandClockScreenState extends State<SandClockScreen>
     with TickerProviderStateMixin {
+  final TextEditingController _hoursController = TextEditingController(
+    text: '${AppConstants.defaultHours}',
+  );
+  final TextEditingController _minutesController = TextEditingController(
+    text: '${AppConstants.defaultMinutes}',
+  );
   final TextEditingController _secondsController = TextEditingController(
     text: '${AppConstants.defaultSeconds}',
   );
@@ -81,11 +87,13 @@ class _SandClockScreenState extends State<SandClockScreen>
   }
 
   int? _parsePositiveSeconds() {
-    final t = _secondsController.text.trim();
-    if (t.isEmpty) return null;
-    final v = int.tryParse(t);
-    if (v == null || v <= 0) return null;
-    return v;
+    final h = int.tryParse(_hoursController.text.trim()) ?? 0;
+    final m = int.tryParse(_minutesController.text.trim()) ?? 0;
+    final s = int.tryParse(_secondsController.text.trim()) ?? 0;
+    if (h < 0 || m < 0 || s < 0) return null;
+    final total = h * 3600 + m * 60 + s;
+    if (total <= 0) return null;
+    return total;
   }
 
   bool get _canStart {
@@ -154,9 +162,35 @@ class _SandClockScreenState extends State<SandClockScreen>
 
   @override
   void dispose() {
+    _hoursController.dispose();
+    _minutesController.dispose();
     _secondsController.dispose();
     _controller.dispose();
     super.dispose();
+  }
+
+  Widget _buildTimeField({
+    required TextEditingController controller,
+    required String label,
+  }) {
+    return SizedBox(
+      width: AppConstants.timeInputWidth,
+      child: TextField(
+        controller: controller,
+        readOnly: _inputLocked,
+        keyboardType: TextInputType.number,
+        textAlign: TextAlign.center,
+        inputFormatters: [
+          FilteringTextInputFormatter.digitsOnly,
+        ],
+        decoration: InputDecoration(
+          labelText: label,
+          border: const OutlineInputBorder(),
+          isDense: true,
+        ),
+        onChanged: (_) => setState(() {}),
+      ),
+    );
   }
 
   @override
@@ -210,22 +244,21 @@ class _SandClockScreenState extends State<SandClockScreen>
               ),
               const SizedBox(height: 8),
               Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _secondsController,
-                      readOnly: _inputLocked,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                      ],
-                      decoration: const InputDecoration(
-                        labelText: AppStrings.fieldSecondsLabel,
-                        border: OutlineInputBorder(),
-                      ),
-                      onChanged: (_) => setState(() {}),
-                    ),
+                  _buildTimeField(
+                    controller: _hoursController,
+                    label: AppStrings.fieldHoursLabel,
+                  ),
+                  const SizedBox(width: AppConstants.timeInputGap),
+                  _buildTimeField(
+                    controller: _minutesController,
+                    label: AppStrings.fieldMinutesLabel,
+                  ),
+                  const SizedBox(width: AppConstants.timeInputGap),
+                  _buildTimeField(
+                    controller: _secondsController,
+                    label: AppStrings.fieldSecondsLabel,
                   ),
                 ],
               ),

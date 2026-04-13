@@ -39,6 +39,9 @@ class HourglassPainter extends CustomPainter {
     final hUpper = neckY - p;
     final hLower = bottomY - neckY;
     final t = progress.clamp(0.0, 1.0);
+    const maxFillRatio = 0.85;
+    final upperFillRatio = (1.0 - t) * maxFillRatio;
+    final lowerFillRatio = t * maxFillRatio;
 
     final glassFill = Paint()
       ..shader = LinearGradient(
@@ -53,7 +56,7 @@ class HourglassPainter extends CustomPainter {
     canvas.drawPath(upperPath, glassFill);
     canvas.drawPath(lowerPath, glassFill);
 
-    final ySandTop = p + hUpper * t;
+    final ySandTop = neckY - hUpper * upperFillRatio;
     final upperSandPath = _upperSandPath(w, p, neckY, ySandTop);
     if (upperSandPath != null) {
       canvas.drawPath(
@@ -71,7 +74,7 @@ class HourglassPainter extends CustomPainter {
       );
     }
 
-    final yBoundary = bottomY - hLower * t;
+    final yBoundary = bottomY - hLower * lowerFillRatio;
     final lowerSandPath = _lowerSandPath(w, p, neckY, bottomY, yBoundary);
     if (lowerSandPath != null) {
       canvas.drawPath(
